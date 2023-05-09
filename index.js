@@ -175,8 +175,8 @@ async function execSubstitution(filePath) {
       const { line, col } = getPosInFile(content, change.offset);
       console.log(`${filePath}:${line}:${col}`);
       console.log(change.matchStr, "->", change.replacement);
+      console.log();
     });
-    console.log();
   }
 
   const backupPath = filePath + ".envs";
