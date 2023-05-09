@@ -42,7 +42,7 @@ RUN curl https://raw.githubusercontent.com/MoritzKn/env-at-startup/main/index.js
  && chmod +x env-at-startup
 ```
 
-### 2st Run the script before start up
+### 2nd Run the script before start up
 
 If you have a `docker-entrypoint.sh` and your `docker-entrypoint.sh` ends with `exec "$@"` (this is usually the case), you can do this:
 
