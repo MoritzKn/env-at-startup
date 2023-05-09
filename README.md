@@ -13,7 +13,7 @@ So why not simply replace the environment variables post-build, with a little sc
 This script is `env-at-startup`.
 
 ```
-Usage ./env-at-startup [options] <file>...
+Usage ./env-at-startup <file>... [options]
 
 Options:
   --help           Show this screen.

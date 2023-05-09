@@ -9,7 +9,7 @@ class ReplaceError extends Error {}
 
 function printHelp() {
   console.log(`
-Usage ./env-at-startup [options] <file>...
+Usage ./env-at-startup <file>... [options]
 
 Options:
   --help           Show this screen.
