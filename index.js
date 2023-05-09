@@ -18,6 +18,7 @@ Options:
   --ignore-other   When using --vars, all other vars are ignored (by default we error out).
   --allow-missing  Missing env vars are set to undefined (by default we error out).
   --rollback       Rollback all replacements.
+  --debug          Show debug logs
 
 Examples:
   ./env-at-startup dist/*.js --vars 'API_URL,NEXT_PUBLIC_*'
