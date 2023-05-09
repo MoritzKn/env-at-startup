@@ -152,7 +152,9 @@ async function execSubstitution(filePath) {
           throw new ReplaceError(`'${varName}' is not set.`);
         }
       } else if (args.flags.allowUnreplaced) {
-        console.warn("Skipping", matchStr, "in", filePath);
+        if (args.flags.debug) {
+          console.warn("Skipping", matchStr, "in", filePath);
+        }
         return matchStr;
       }
 
@@ -302,7 +304,9 @@ async function main() {
     printErrors(errors);
     process.exit(1);
   } else {
-    console.log(`Finished substitution on ${args.files.length} files`);
+    console.log(
+      `Finished substituting environment variables in ${args.files.length} files`
+    );
     const replacements = {};
     results.forEach((res) => {
       if (typeof res === "object") {
