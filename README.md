@@ -1,4 +1,35 @@
-# env-at-startup
+# `env-at-startup`
+
+> Replace environment variables (e.g. `process.env.API_URL`) in frontend docker containers at "start up" time
+
+It's the age old problem. The DevOps people agree: "the docker image should be the same for all environments".
+Just use environment variables for configuration. But then, if you're frontend dev, you don't write any server code.
+You're environment variables are defined at build time. The webpack `DefinePlugin` is ubiquitous for this use-case.
+
+This is all fine and good until these wolds collide. A lot of the time tools coming out of the DevOps wold often
+don't support the way we do it in the frontend world.
+
+So why not simply replace the environment variables post-build, with a little script just before the docker container starts.
+This script is `env-at-startup`.
+
+```
+Usage ./env-at-startup [options] <file>...
+
+Options:
+  --help           Show this screen.
+  -v --verbose     Show all replacements.
+  --vars           Only replace these vars. Comma separated list, wildcards (*) allowed.
+  --ignore-other   When using --vars, all other vars are ignored (by default we error out).
+  --allow-missing  Missing env vars are set to undefined (by default we error out).
+  --rollback       Rollback all replacements.
+
+Examples:
+  ./env-at-startup dist/*.js --vars 'API_URL,NEXT_PUBLIC_*'
+  ./env-at-startup dist/*.js --rollback
+
+Use 'find' to access files recursively:
+./env-at-startup $(find . -name "*.js")
+```
 
 ## How to use
 
@@ -13,8 +44,7 @@ RUN curl https://raw.githubusercontent.com/MoritzKn/env-at-startup/main/index.js
 
 ### 2st Run the script before start up
 
-If you have a `docker-entrypoint.sh` you can do this:
-(assuming your `docker-entrypoint.sh` ends with `exec "$@"` this is usually the case)
+If you have a `docker-entrypoint.sh` and your `docker-entrypoint.sh` ends with `exec "$@"` (this is usually the case), you can do this:
 
 ```Dockerfile
 RUN apk add nodejs \

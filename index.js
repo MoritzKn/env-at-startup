@@ -12,16 +12,19 @@ function printHelp() {
 Usage ./env-at-startup [options] <file>...
 
 Options:
-  --help              Show this screen.
-  -v --verbose        Show all replacements.
-  --vars              Only replace these vars. Comma separated list, wildcards (*) allowed.
-  --allow-missing     Missing env vars are set to undefined.
-  --allow-unreplaced  If process.env.ANY can not be replaced, it is ignored
-  --rollback          Rollback all replacements.
+  --help           Show this screen.
+  -v --verbose     Show all replacements.
+  --vars           Only replace these vars. Comma separated list, wildcards (*) allowed.
+  --ignore-other   When using --vars, all other vars are ignored (by default we error out).
+  --allow-missing  Missing env vars are set to undefined (by default we error out).
+  --rollback       Rollback all replacements.
 
 Examples:
-  ./env-at-startup dist/**.js --vars 'API_URL,NEXT_PUBLIC_*'
-  ./env-at-startup dist/**.js --rollback
+  ./env-at-startup dist/*.js --vars 'API_URL,NEXT_PUBLIC_*'
+  ./env-at-startup dist/*.js --rollback
+
+Use 'find' to access files recursively:
+./env-at-startup $(find . -name "*.js")
 `);
 }
 
@@ -47,11 +50,11 @@ function parseArgs(argv) {
         case "--vars":
           currentFlag = "vars";
           break;
+        case "--ignore-other":
+          flags.ignoreOther = true;
+          break;
         case "--allow-missing":
           flags.allowMissing = true;
-          break;
-        case "--allow-unreplaced":
-          flags.allowUnreplaced = true;
           break;
         case "--rollback":
           flags.rollback = true;
@@ -151,7 +154,7 @@ async function execSubstitution(filePath) {
         } else {
           throw new ReplaceError(`'${varName}' is not set.`);
         }
-      } else if (args.flags.allowUnreplaced) {
+      } else if (args.flags.ignoreOther) {
         if (args.flags.debug) {
           console.warn("Skipping", matchStr, "in", filePath);
         }
