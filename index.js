@@ -1,38 +1,33 @@
-const fs = require("fs/promise");
+const fs = require("fs").promises;
 
 let args = null;
 let allowList = [];
 
+class ReplaceError extends Error {}
+
 function printHelp() {
-  console.log("");
-  console.log("Usage ./env-at-startup [options] <file>...");
-  console.log("");
-  console.log("Options:");
-  console.log("  --help              Show this screen.");
-  console.log("  -v --verbose        Show all replacements.");
-  console.log(
-    "  --vars           Only replace these vars. Comma separated list, wildcards (*) allowed."
-  );
-  console.log("  --no-progress       Do not display file by file progress.");
-  console.log("  --allow-missing     Missing env vars are set to undefined.");
-  console.log(
-    "  --allow-unreplaced  If process.env.ANY can not be replaced, it is ignored"
-  );
-  console.log("  --rollback          Rollback all replacements.");
-  console.log("");
-  console.log("Examples:");
-  console.log("  ./env-at-startup dist/**.js --vars 'API_URL,NEXT_PUBLIC_*'");
-  console.log("  ./env-at-startup dist/**.js --rollback");
-  console.log("");
+  console.log(`
+Usage ./env-at-startup [options] <file>...
+
+Options:
+  --help              Show this screen.
+  -v --verbose        Show all replacements.
+  --vars              Only replace these vars. Comma separated list, wildcards (*) allowed.
+  --allow-missing     Missing env vars are set to undefined.
+  --allow-unreplaced  If process.env.ANY can not be replaced, it is ignored
+  --rollback          Rollback all replacements.
+
+Examples:
+  ./env-at-startup dist/**.js --vars 'API_URL,NEXT_PUBLIC_*'
+  ./env-at-startup dist/**.js --rollback
+`);
 }
 
 function parseArgs(argv) {
   const [node, script, ...args] = argv;
 
   let files = [];
-  let flags = {
-    progress: true,
-  };
+  let flags = {};
   let currentFlag = null;
 
   args.forEach((arg) => {
@@ -50,9 +45,6 @@ function parseArgs(argv) {
         case "--vars":
           currentFlag = "vars";
           break;
-        case "--no-progress":
-          flags.progress = false;
-          break;
         case "--allow-missing":
           flags.allowMissing = true;
           break;
@@ -66,9 +58,13 @@ function parseArgs(argv) {
         case "--verbose":
           flags.verbose = true;
           break;
+        case "--debug":
+          flags.debug = true;
+          break;
         default:
-          console.warn("Unknown flag:", arg);
+          console.error("Unknown flag:", arg);
           process.exit(1);
+          break;
       }
     } else {
       files.push(arg);
@@ -99,13 +95,13 @@ function isAllowed(varName) {
 }
 
 function getPosInFile(string, offset) {
-  let col = 0;
-  let line = 0;
+  let line = 1;
+  let col = 1;
   for (let index = 0; index < Math.min(string.length, offset); index++) {
     const char = string[index];
     if (char == "\n") {
       line += 1;
-      col = 0;
+      col = 1;
       continue;
     }
 
@@ -151,14 +147,14 @@ async function execSubstitution(filePath) {
           changes.push({ matchStr, offset, replacement });
           return replacement;
         } else {
-          throw new Error(`'${varName}' is not set.`);
+          throw new ReplaceError(`'${varName}' is not set.`);
         }
       } else if (args.flags.allowUnreplaced) {
         console.warn("Skipping", matchStr, "in", filePath);
         return matchStr;
       }
 
-      throw new Error(`'${matchStr}' missing in --vars`);
+      throw new ReplaceError(`'${matchStr}' missing in --vars`);
     }
   );
 
@@ -167,10 +163,10 @@ async function execSubstitution(filePath) {
   }
 
   if (args.flags.verbose) {
-    console.log(filePath);
     changes.forEach((change) => {
       const { line, col } = getPosInFile(content, change.offset);
-      console.log(`${line}:${col}`, change.matchStr, "->", change.replacement);
+      console.log(`${filePath}:${line}:${col}`);
+      console.log(change.matchStr, "->", change.replacement);
     });
     console.log();
   }
@@ -192,35 +188,30 @@ async function rollback(filePath) {
   try {
     const statEnv = await fs.stat(backupPath);
     if (!statEnv.isFile()) {
-      throw new Error("Not a file " + backupPath);
+      throw new ReplaceError("Not a file " + backupPath);
+      return "NOT_A_FILE";
     }
   } catch (error) {
-    return "NOBAK";
+    return "NO_BAK";
   }
 
   const contentBuffer = await fs.readFile(filePath + ".envs");
   await fs.writeFile(filePath, contentBuffer);
   await fs.rm(filePath + ".envs");
 
-  return "ROLLEDBACK";
+  return "ROLLED_BACK";
 }
 
 function printUpdate(file, result) {
   if (result instanceof Error) {
-    console.log(" -", file, "FAILED");
+    console.debug(" -", file, "FAILED");
   } else {
-    if (result === "UNTOUCHED" || result === "NOBAK") {
-      // Skip
-    } else if (typeof result === "string") {
-      console.log(" -", file, result);
+    if (typeof result === "string") {
+      console.debug(" -", file, result);
     } else if (typeof result === "object") {
-      if (!args.flags.verbose) {
-        console.log(" -", file, "REPLACED", result.count);
-      } else {
-        // Replacements are already logged
-      }
+      console.debug(" -", file, "REPLACED", result.count);
     } else {
-      console.log(" -", file, "DONE");
+      console.debug(" -", file, "DONE");
     }
   }
 }
@@ -231,12 +222,12 @@ async function runAll(list, func) {
   const proms = list.map(func).map((prom, index) =>
     prom
       .then((result) => {
-        if (args.flags.progress) printUpdate(args.files[index], result);
+        if (args.flags.debug) printUpdate(list[index], result);
         done.push({ index, result });
         return result;
       })
       .catch((error) => {
-        if (args.flags.progress) printUpdate(args.files[index], error);
+        if (args.flags.debug) printUpdate(list[index], error);
         errors.push({ index, error });
       })
   );
@@ -247,16 +238,16 @@ async function runAll(list, func) {
 }
 
 function printErrors(errors) {
-  if (!args.flags.progress) {
-    console.error("Failed files:");
-    errors.forEach(({ index, error }) => {
-      console.error(" -", args.files[index], `(${error.message})`);
-    });
-    console.error();
-  }
+  console.error("Failed files:");
+  errors.forEach(({ index, error }) => {
+    console.error(" -", args.files[index], `(${error.message})`);
+  });
 
-  console.error("The first error was:");
-  console.error(errors[0].error);
+  if (!(errors[0].error instanceof ReplaceError)) {
+    console.error();
+    console.error("The first error was:");
+    console.error(errors[0].error);
+  }
 }
 
 async function main() {
@@ -267,7 +258,6 @@ async function main() {
     const { errors, results } = await runAll(args.files, (file) =>
       rollback(file)
     );
-    if (args.flags.progress) console.log();
 
     if (errors.length > 0) {
       console.error(
@@ -285,7 +275,7 @@ async function main() {
         }
       });
       Object.entries(stats).forEach(([k, v]) => {
-        console.log(" -", k, `x${v}`);
+        console.log(" -", k, `${v} times`);
       });
       process.exit(0);
     }
@@ -294,16 +284,15 @@ async function main() {
   const { errors, results } = await runAll(args.files, (file) =>
     execSubstitution(file)
   );
-  if (args.flags.progress) console.log();
 
   if (errors.length > 0) {
     console.error(
-      `Substitution failed on ${errors.length}/${args.files.length} files`
+      `Substituting environment variables failed on ${errors.length}/${args.files.length} files`
     );
     const replaced = results.filter((res) => typeof res === "object");
     if (replaced.length > 0) {
-      console.log("");
-      console.log(
+      console.error("");
+      console.error(
         `IMPORTANT: Some files where still updated. Run with --rollback to undo changes on ${replaced.length} files.`
       );
     }
@@ -330,7 +319,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error("Uncaught async error");
+  console.error("Uncaught async error:");
   console.error();
   console.error(error);
   process.exit(1);
