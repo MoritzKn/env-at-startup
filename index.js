@@ -30,10 +30,10 @@ Use 'find' to access files recursively:
 }
 
 function parseArgs(argv) {
-  const [node, script, ...args] = argv;
+  const [_node, _script, ...args] = argv;
 
-  let files = [];
-  let flags = {};
+  const files = [];
+  const flags = {};
   let currentFlag = null;
 
   args.forEach((arg) => {
@@ -48,6 +48,7 @@ function parseArgs(argv) {
         case "--help":
           printHelp();
           process.exit(0);
+          break;
         case "--vars":
           currentFlag = "vars";
           break;
@@ -87,9 +88,7 @@ function parseAllowList(flagVars = "") {
   return flagVars
     .split(",")
     .filter(Boolean)
-    .map((pattern) => {
-      return new RegExp("^" + pattern.replace("*", ".*") + "$");
-    });
+    .map((pattern) => new RegExp("^" + pattern.replace("*", ".*") + "$"));
 }
 
 function isAllowed(varName) {
