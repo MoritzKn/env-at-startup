@@ -1,0 +1,25 @@
+{
+  "name": "env-at-startup",
+  "version": "1.0.1",
+  "description": "Replace environment variables (e.g. process.env.API_URL) in frontend docker containers at \"start up\" time",
+  "main": "index.js",
+  "bin": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/MoritzKn/env-at-startup.git"
+  },
+  "keywords": [
+    "docker",
+    "frontend",
+    "devops"
+  ],
+  "author": "Moritz Kneilmann <moritz@kneilmann.tech>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/MoritzKn/env-at-startup/issues"
+  },
+  "homepage": "https://github.com/MoritzKn/env-at-startup#readme"
+}
