@@ -4,7 +4,7 @@
 
 It's the age old problem. The DevOps people agree: "the docker image should be the same for all environments".
 Just use environment variables for configuration. But then, if you're frontend dev, you don't write any server code.
-You're environment variables are defined at build time. The webpack `DefinePlugin` is ubiquitous for this use-case.
+You're environment variables are defined at build time. The [Webpack `DefinePlugin`/`EnvironmentPlugin`](https://webpack.js.org/plugins/environment-plugin/) is ubiquitous for this use-case.
 That means replacing the environment variables in code at build time. So they are backed into the container image
 and need to be provided via `--build-arg`.
 
@@ -69,7 +69,7 @@ CMD ["/bin/sh", "-c", "./env-at-startup $(find . -name '*.js') && npm run start"
 
 ## Example
 
-Here is a full example of a classical frontend app:
+Here is a full example of a basic frontend app:
 
 ```Dockerfile
 FROM node:alpine as build
@@ -78,18 +78,18 @@ WORKDIR /app
 RUN curl https://raw.githubusercontent.com/MoritzKn/env-at-startup/main/index.js -o env-at-startup \
  && chmod +x env-at-startup
 
-COPY package.json yarn.lock ./
-RUN yarn install --frozen-lockfile --prod
+COPY package*.json ./
+RUN npm ci
 
 COPY src src
-RUN yarn build
+RUN npm run build
 
 FROM nginx:1-alpine
 EXPOSE 5000
 
 COPY nginx.conf /etc/nginx/conf.d/default.conf
-# Copy the out directory (make sure to adjust this!)
-COPY --from=build /app/out/ /usr/share/nginx/html
+# Copy the "dist" directory (make sure to adjust this!)
+COPY --from=build /app/dist/ /usr/share/nginx/html
 COPY --from=build /app/env-at-startup /env-at-startup
 
 RUN apk add nodejs \
