@@ -1,18 +1,22 @@
 # `env-at-startup`
 
-> Replace environment variables (e.g. `process.env.API_URL`) in frontend docker containers at "start up" time
+> Replace environment variables (e.g. `process.env.API_URL`) in frontend docker containers at "start-up" time
 
-It's the age old problem. The DevOps people agree: "the docker image should be the same for all environments".
-Just use environment variables for configuration. But then, if you're frontend dev, you don't write any server code.
-You're environment variables are defined at build time. The [Webpack `DefinePlugin`/`EnvironmentPlugin`](https://webpack.js.org/plugins/environment-plugin/) is ubiquitous for this use-case.
-That means replacing the environment variables in code at build time. So they are backed into the container image
-and need to be provided via `--build-arg`.
+It's the age-old problem. The DevOps people agree: 
 
-This is all fine and good until these wolds collide. A lot of the time tools coming out of the DevOps world
-don't support the way we do things in the frontend world. They don't expect you do back environment variables
+"Docker images should be the same for all environments; Just use environment variables for configuration."
+
+
+But then, as a frontend developer, you don't write server code.
+Your "environment variables" are defined at build time. The [Webpack `DefinePlugin`/`EnvironmentPlugin`](https://webpack.js.org/plugins/environment-plugin/) is ubiquitous for this use-case.
+That means replacing the environment variables in the code at build time. So they are backed into the container image
+and need to be configured via `--build-arg`.
+
+This is all fine and good until these worlds collide. Most software coming out of the DevOps world
+doesn't support the way we do things in the frontend world. They don't expect you to back environment variables
 into the image. And, arguably, they have a point.
 
-So why not simply replace the environment variables post-build, with a little script, just before the docker container starts.
+So why not replace the environment variables post-build, with a little script, before the docker container starts?
 
 This script is `env-at-startup`.
 
@@ -22,7 +26,7 @@ Usage ./env-at-startup <file>... [options]
 Options:
   --help           Show this screen.
   -v --verbose     Show all replacements.
-  --vars           Only replace these vars. Comma separated list, wildcards (*) allowed.
+  --vars           Only replace these vars. Comma-separated list, wildcards (*) allowed.
   --ignore-other   When using --vars, all other vars are ignored (by default we error out).
   --allow-missing  Missing env vars are set to undefined (by default we error out).
   --rollback       Rollback all replacements.
@@ -47,7 +51,7 @@ RUN curl https://raw.githubusercontent.com/MoritzKn/env-at-startup/main/index.js
  && chmod +x env-at-startup
 ```
 
-### 2nd Run the script before start up
+### 2nd Run the script before start-up
 
 If you have a `docker-entrypoint.sh` and your `docker-entrypoint.sh` ends with `exec "$@"` (this is usually the case), you can do this:
 
