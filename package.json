@@ -1,6 +1,6 @@
 {
   "name": "env-at-startup",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Replace environment variables (e.g. process.env.API_URL) in frontend docker containers at \"start up\" time",
   "main": "index.js",
   "bin": "index.js",
