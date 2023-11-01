@@ -9,16 +9,16 @@ It's the age-old problem. The DevOps people agree:
 
 But then, as a frontend developer, you don't write server code.
 Your "environment variables" are defined at build time. The [Webpack `DefinePlugin`/`EnvironmentPlugin`](https://webpack.js.org/plugins/environment-plugin/) is ubiquitous for this use-case.
-That means replacing the environment variables in the code at build time. So they are backed into the container image
+That means replacing the environment variables in the code at build time. So they are baked into the container image
 and need to be configured via `--build-arg`.
 
 This is all fine and good until these worlds collide. Most software coming out of the DevOps world
-doesn't support the way we do things in the frontend world. They don't expect you to back environment variables
+doesn't support the way we do things in the frontend world. They don't expect you to bake environment variables
 into the image. And, arguably, they have a point.
 
 So why not replace the environment variables post-build, with a little script, before the docker container starts?
 
-This script is `env-at-startup`.
+This script is what `env-at-startup` is doing.
 
 ```
 Usage ./env-at-startup <file>... [options]
